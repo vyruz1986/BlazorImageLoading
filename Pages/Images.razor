@@ -1,0 +1,46 @@
+@page "/images"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<div>
+    @foreach(var imageSrc in ImageSources)
+    {
+        <div>
+            <img hidden="@(!imageSrc.Loaded)" id="@imageSrc.Id" />
+            @if(!imageSrc.Loaded)
+            {
+                <span>Loading...</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ImageSource> ImageSources = new(){
+        new(Guid.NewGuid(), "https://picsum.photos/200/300"),
+        new(Guid.NewGuid(), "https://picsum.photos/200/300"),
+        new(Guid.NewGuid(), "https://picsum.photos/200/300"),
+        new(Guid.NewGuid(), "https://picsum.photos/200/300")
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        foreach(var imageSrc in ImageSources)
+        {
+            var stream = await Http.GetStreamAsync(imageSrc.Url);
+            await SetImage(imageSrc.Id.ToString(), stream);
+            imageSrc.Loaded = true;
+        }
+    }
+    public async Task SetImage(string imageElementId, Stream imageStream)
+    {
+        await Task.Delay(1000);
+        var dotnetImageStream = new DotNetStreamReference(imageStream);
+        await JS.InvokeVoidAsync("setImage", imageElementId, dotnetImageStream);
+    }
+
+    public record ImageSource(Guid Id, string Url)
+    {
+        public bool Loaded {get;set;}
+    }
+}
